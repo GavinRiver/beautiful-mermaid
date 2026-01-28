@@ -1,0 +1,52 @@
+{
+  "name": "beautiful-mermaid",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lukilabs/beautiful-mermaid"
+  },
+  "homepage": "https://github.com/lukilabs/beautiful-mermaid",
+  "bugs": {
+    "url": "https://github.com/lukilabs/beautiful-mermaid/issues"
+  },
+  "keywords": [
+    "mermaid",
+    "diagram",
+    "svg",
+    "ascii",
+    "flowchart",
+    "sequence-diagram",
+    "class-diagram",
+    "er-diagram",
+    "state-diagram",
+    "visualization",
+    "theming"
+  ],
+  "author": "Luki Labs",
+  "scripts": {
+    "test": "bun test src/__tests__/",
+    "samples": "bun run index.ts",
+    "dev": "bun run dev.ts",
+    "bench": "bun run bench.ts",
+    "build": "bun run index.ts && mkdir -p dist && mv index.html dist/ && cp -r public/* dist/"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^1.1.8"
+  },
+  "devDependencies": {
+    "shiki": "^3.19.0"
+  }
+}
