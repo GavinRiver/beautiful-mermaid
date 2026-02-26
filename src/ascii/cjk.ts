@@ -15,8 +15,10 @@ import type { Canvas, RoleCanvas, CharRole } from './types.ts'
  * canvas cell. Stripped by `canvasToString()` before output.
  *
  * Uses a Private Use Area character (U+E000) to avoid collisions with
- * real user text. If stripping is accidentally skipped, the character
- * renders as a visible box (□) — making the bug immediately obvious.
+ * real user text. Limitation: if user text contains U+E000 itself, it
+ * will be stripped (PUA chars are rare in diagram labels).
+ * If stripping is accidentally skipped, U+E000 renders as a visible
+ * box (□) — making the bug immediately obvious.
  */
 export const CJK_PAD = '\uE000'
 
@@ -29,6 +31,7 @@ export function isFullwidthChar(code: number): boolean {
   return (
     // --- CJK ---
     (code >= 0x1100 && code <= 0x115f) || // Hangul Jamo
+    (code >= 0x2329 && code <= 0x232a) || // Angle Brackets (EAW=W)
     (code >= 0x2e80 && code <= 0x2eff) || // CJK Radicals Supplement
     (code >= 0x2f00 && code <= 0x2fdf) || // Kangxi Radicals
     (code >= 0x3000 && code <= 0x303f) || // CJK Symbols and Punctuation
@@ -49,9 +52,13 @@ export function isFullwidthChar(code: number): boolean {
     code === 0x1f004 || code === 0x1f0cf || code === 0x1f18e ||
     (code >= 0x1f191 && code <= 0x1f19a) ||
     (code >= 0x1f1e0 && code <= 0x1f1ff) || // Regional indicators
-    (code >= 0x1f200 && code <= 0x1f202) ||
+    (code >= 0x1f200 && code <= 0x1f202) || // Enclosed Ideographic Supplement
+    (code >= 0x1f210 && code <= 0x1f23b) || // Squared CJK Unified Ideograph
+    (code >= 0x1f240 && code <= 0x1f248) || // Tortoise Shell Bracketed CJK
+    (code >= 0x1f250 && code <= 0x1f251) || // Circled Ideograph
     (code >= 0x1f300 && code <= 0x1f64f) || // Misc Symbols & Emoticons
     (code >= 0x1f680 && code <= 0x1f6ff) || // Transport & Map
+    (code >= 0x1f7e0 && code <= 0x1f7eb) || // Colored circles/squares
     (code >= 0x1f900 && code <= 0x1f9ff) || // Supplemental Symbols
     (code >= 0x1fa00 && code <= 0x1fa6f) || // Chess Symbols
     (code >= 0x1fa70 && code <= 0x1faff) || // Symbols Extended-A
@@ -212,6 +219,7 @@ export function displayWidth(str: string): number {
  * @param forceOverwrite - If true, overwrite existing non-space characters
  * @param roleCanvas - Optional role canvas for colored output
  * @param role - Character role to assign (requires roleCanvas)
+ * @param maxCols - Maximum display columns to render (clips text at boundary)
  */
 export function drawCJKText(
   canvas: Canvas,
@@ -221,31 +229,42 @@ export function drawCJKText(
   forceOverwrite = false,
   roleCanvas?: RoleCanvas,
   role?: CharRole,
+  maxCols?: number,
 ): void {
   let offset = 0
   let lastWrittenCx = -1
-  let lastWasFullwidth = false
+  let lastWasNarrowEmoji = false
+  let lastCharWritten = false
   const h = canvas[0]?.length ?? 0
   for (const ch of text) {
     const code = ch.codePointAt(0)
     if (code === undefined) continue
-    // FE0F: 追加到前一个 cell，若非全宽则升级为全宽
+    // FE0F: 若前一个是 narrow emoji 且有空间，升级为全宽（追加 FE0F + 放 CJK_PAD）
     if (code === 0xfe0f) {
-      if (lastWrittenCx >= 0 && lastWrittenCx < canvas.length && y >= 0 && y < h) {
-        canvas[lastWrittenCx]![y] = (canvas[lastWrittenCx]![y] ?? '') + ch
-      }
-      if (!lastWasFullwidth) {
-        const px = x + offset
-        if (px >= 0 && px < canvas.length && y >= 0 && y < h) {
-          canvas[px]![y] = CJK_PAD
+      if (lastWasNarrowEmoji && lastCharWritten) {
+        // 需要 1 列放 CJK_PAD；空间不够则跳过升级（保持 1 列窄 emoji）
+        if (maxCols === undefined || offset < maxCols) {
+          if (lastWrittenCx >= 0 && lastWrittenCx < canvas.length && y >= 0 && y < h) {
+            canvas[lastWrittenCx]![y] = (canvas[lastWrittenCx]![y] ?? '') + ch
+          }
+          const px = x + offset
+          if (px >= 0 && px < canvas.length && y >= 0 && y < h) {
+            canvas[px]![y] = CJK_PAD
+          }
+          offset++
         }
-        offset++
-        lastWasFullwidth = true
+        lastWasNarrowEmoji = false
+      } else if (lastCharWritten && lastWrittenCx >= 0 && lastWrittenCx < canvas.length && y >= 0 && y < h) {
+        // 非 emoji 后的 FE0F: 追加为零宽（无视觉效果）
+        canvas[lastWrittenCx]![y] = (canvas[lastWrittenCx]![y] ?? '') + ch
       }
       continue
     }
     // 其他零宽字符: 跳过
     if (isZeroWidth(code)) continue
+    // maxCols 检查: 全宽字符需要 2 列空间
+    const charWidth = isFullwidthChar(code) ? 2 : 1
+    if (maxCols !== undefined && offset + charWidth > maxCols) break
     // 正常字符绘制
     const cx = x + offset
     let written = false
@@ -258,13 +277,13 @@ export function drawCJKText(
         written = true
       }
     }
-    // FIX: lastWrittenCx 只在字符实际写入时更新，防止 FE0F 污染无关 cell
     if (written) {
       lastWrittenCx = cx
     }
+    lastCharWritten = written
     offset++
     if (isFullwidthChar(code)) {
-      lastWasFullwidth = true
+      lastWasNarrowEmoji = false
       if (written) {
         const px = x + offset
         if (px >= 0 && px < canvas.length && y >= 0 && y < h) {
@@ -273,7 +292,7 @@ export function drawCJKText(
       }
       offset++
     } else {
-      lastWasFullwidth = false
+      lastWasNarrowEmoji = isEmojiModifiable(code)
     }
   }
 }

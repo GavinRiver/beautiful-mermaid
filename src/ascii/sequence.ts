@@ -375,7 +375,7 @@ export function renderSequenceAscii(text: string, config: AsciiConfig, colorMode
 
     for (let lineIdx = 0; lineIdx < hdrLines.length && topY + lineIdx < botY; lineIdx++) {
       const line = hdrLines[lineIdx]!
-      drawCJKText(canvas, bLeft + 1, topY + lineIdx, line, true, rc, 'text')
+      drawCJKText(canvas, bLeft + 1, topY + lineIdx, line, true, rc, 'text', bRight - bLeft - 1)
     }
 
     // Bottom border
@@ -401,7 +401,7 @@ export function renderSequenceAscii(text: string, config: AsciiConfig, colorMode
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        drawCJKText(canvas, bLeft + 1, dY, dStr, true, rc, 'text')
+        drawCJKText(canvas, bLeft + 1, dY, dStr, true, rc, 'text', bRight - bLeft - 1)
       }
     }
   }

@@ -350,13 +350,8 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
           // Ensure canvas is tall enough
           increaseSize(canvas, Math.max(labelStart + displayWidth(line), 1), Math.max(labelY + 1, 1))
           increaseRoleCanvasSize(rc, Math.max(labelStart + displayWidth(line), 1), Math.max(labelY + 1, 1))
-          // Clip label to gap boundary [startX, endX]
-          for (let i = 0; i < line.length; i++) {
-            const lx = labelStart + i
-            if (lx >= startX && lx <= endX) {
-              setC(lx, labelY, line[i]!, 'text')
-            }
-          }
+          // CJK-aware label rendering, clipped to gap boundary
+          drawCJKText(canvas, labelStart, labelY, line, true, rc, 'text', endX - labelStart + 1)
         }
       }
     } else {
