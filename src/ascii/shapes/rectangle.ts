@@ -29,7 +29,9 @@ export function getBoxDimensions(label: string, options: ShapeRenderOptions): Sh
   const lineCount = lines.length
 
   // Width: 2*padding + maxLineWidth + 2 border chars
-  const innerWidth = 2 * options.padding + maxLineWidth
+  // Ensure innerWidth is odd for symmetric horizontal centering (matching innerHeight logic)
+  const rawInnerWidth = 2 * options.padding + maxLineWidth
+  const innerWidth = rawInnerWidth % 2 === 0 ? rawInnerWidth + 1 : rawInnerWidth
   const width = innerWidth + 2
 
   // Height: lineCount + 2*padding + 2 border chars
@@ -109,7 +111,9 @@ export function renderBox(
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const textX = Math.floor(w / 2) - Math.ceil(displayWidth(line) / 2) + 1
+    // 居中: 额外空间优先放右侧（left-bias），和 left-to-right 阅读习惯一致
+    const innerW = width - 2
+    const textX = 1 + Math.floor((innerW - displayWidth(line)) / 2)
     drawCJKText(canvas, textX, startY + i, line)
   }
 

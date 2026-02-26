@@ -105,7 +105,9 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const textX = from.x + Math.floor(w / 2) - Math.ceil(displayWidth(line) / 2) + 1
+    // 居中: inner = (from.x+1) to (to.x-1), 余量优先放右侧
+    const boxInnerW = to.x - from.x - 1
+    const textX = from.x + 1 + Math.floor((boxInnerW - displayWidth(line)) / 2)
     drawCJKText(box, textX, startY + i, line)
   }
 
