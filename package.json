@@ -1,13 +1,17 @@
 {
   "name": "beautiful-mermaid",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "license": "MIT",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies.",
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "repository": {
     "type": "git",
@@ -32,16 +36,17 @@
     "theming"
   ],
   "author": "Craft Docs",
-  "files": ["src/", "LICENSE", "README.md"],
+  "files": ["src/", "dist/", "LICENSE", "README.md"],
   "scripts": {
     "test": "bun test src/__tests__/",
     "samples": "bun run index.ts",
     "dev": "bun run dev.ts",
     "bench": "bun run bench.ts",
     "build": "tsup",
-    "build:samples": "bun run index.ts && mkdir -p dist && mv index.html dist/ && cp -r public/* dist/",
-    "deploy": "bun run build:samples && wrangler pages deploy dist --project-name craft-agents-mermaid",
-    "xychart-test": "bun run xychart-test.ts"
+    "build:samples": "bun run index.ts && mkdir -p site && mv index.html site/ && cp -r public/* site/",
+    "deploy": "bun run build:samples && wrangler pages deploy site --project-name craft-agents-mermaid",
+    "xychart-test": "bun run xychart-test.ts",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "elkjs": "^0.11.0",
