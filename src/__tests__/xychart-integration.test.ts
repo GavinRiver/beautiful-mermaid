@@ -118,3 +118,20 @@ describe('xychart – interactive tooltips', () => {
     expect(svg).toContain('data-label="Jan"')
   })
 })
+
+// ============================================================================
+// CSS variable color inputs
+// ============================================================================
+
+describe('xychart – CSS variable color inputs', () => {
+  it('does not produce NaN colors when accent/bg are CSS variables', async () => {
+    const svg = await renderMermaid(MIXED_CHART, {
+      bg: 'var(--background)',
+      fg: 'var(--foreground)',
+      accent: 'var(--accent)',
+    })
+    expect(svg).not.toContain('NaN')
+    expect(svg).toContain('xychart-color-0')
+    expect(svg).toContain('xychart-color-1')
+  })
+})

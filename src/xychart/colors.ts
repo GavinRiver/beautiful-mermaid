@@ -81,6 +81,11 @@ function rgbToHex(r: number, g: number, b: number): string {
 // Public API
 // ---------------------------------------------------------------------------
 
+/** Check whether a string is a valid 6-digit hex color (e.g. "#3b82f6"). */
+export function isValidHex(color: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(color)
+}
+
 /**
  * Detect whether a background color is dark (lightness < 50%).
  */
@@ -112,14 +117,17 @@ export function mixHexColors(bgHex: string, fgHex: string, ratio: number): strin
  */
 export function getSeriesColor(index: number, accentColor: string, bgColor?: string): string {
   if (index === 0) return accentColor
-  const [h, s] = hexToHsl(accentColor)
+  // Fall back to defaults when inputs aren't valid hex (e.g. CSS variable refs like "var(--accent)")
+  const safeAccent = isValidHex(accentColor) ? accentColor : CHART_ACCENT_FALLBACK
+  const safeBg = bgColor && isValidHex(bgColor) ? bgColor : undefined
+  const [h, s] = hexToHsl(safeAccent)
   const chartS = Math.max(55, Math.min(85, s))
 
   const tier = Math.ceil(index / 2)
   const oddIndex = index % 2 === 1
 
   // On dark backgrounds, flip: odd = lighter, even = darker
-  const dark = bgColor && isDarkBackground(bgColor) ? !oddIndex : oddIndex
+  const dark = safeBg && isDarkBackground(safeBg) ? !oddIndex : oddIndex
   const l = dark
     ? Math.max(25, 48 - tier * 13)
     : Math.min(78, 55 + tier * 11)
